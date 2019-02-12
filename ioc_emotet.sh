@@ -2,6 +2,7 @@
 
 if [ $# -ne 1 ]; then
 	echo "ERROR: Necesita pasarle un archivo como parametro"
+	exit 1
 fi
 
 TEMP_B64=$(mktemp)
@@ -11,8 +12,14 @@ echo "Extrayendo la información de payload OLE del Word.."
 xmlstarlet sel -t -m "//w:docSuppData" -v "w:binData" "$1" > $TEMP_B64
 echo
 
+sed -i -e "s/\s*//g" "$TEMP_B64"
+if [ -z $(cat "$TEMP_B64") ]; then
+	echo "ERROR: El payload no existe, el archivo esta limpio"
+	exit 1
+fi
+
 echo "Descomprimiendo el payload..."
-python -c 'import sys,zlib,binascii; input = sys.argv[1]; output = sys.argv[2]; f = open(input,"r"); ole_data=zlib.decompress(binascii.a2b_base64(f.read())[0x32:]); f.close(); f = open(output,"a"); f.write(ole_data); f.close();' $TEMP_B64 $TEMP_OLE
+python -c 'import sys,zlib,binascii; input = sys.argv[1]; output = sys.argv[2]; f = open(input,"r"); ole_data=zlib.decompress(binascii.a2b_base64(f.read())[0x32:]); f.close(); f = open(output,"a"); f.write(ole_data); f.close();' "$TEMP_B64" "$TEMP_OLE"
 echo
 
 echo "Extrayendo el codigo con olevba y sed..."
