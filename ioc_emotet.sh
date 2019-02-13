@@ -11,7 +11,7 @@ fi
 TEMP_B64=$(mktemp)
 TEMP_OLE=$(mktemp)
 TEMP_CODE=$(mktemp)
-echo "Extrayendo la información de payload OLE del Word.."
+echo "- Extrayendo la información de payload OLE del Word.."
 xmlstarlet sel -t -m "//w:docSuppData" -v "w:binData" "$1" > $TEMP_B64
 echo
 
@@ -22,29 +22,28 @@ if [ -z "$(cat $TEMP_B64)" ]; then
 	exit 1
 fi
 
-echo "Descomprimiendo el payload..."
+echo "- Descomprimiendo el payload..."
 python -c 'import sys,zlib,binascii; input = sys.argv[1]; output = sys.argv[2]; f = open(input,"r"); ole_data=zlib.decompress(binascii.a2b_base64(f.read())[0x32:]); f.close(); f = open(output,"a"); f.write(ole_data); f.close();' "$TEMP_B64" "$TEMP_OLE"
 echo
 
-echo "Extrayendo el codigo con olevba y sed..."
+echo "- Extrayendo el codigo con olevba y sed..."
 olevba -c "$TEMP_OLE" | grep -e '"' | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | paste -sd "" - | sed -re "s/^.*-e\s*//" | sed -re "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
 rm "$TEMP_B64" "$TEMP_OLE"
 TEST=$(cat "$TEMP_CODE" | sed -re "s/[A-Za-z0-9=+\/ ]+//g")
 echo
 
 if [ -z "$TEST" ]; then
-	echo "Al parecer es un codigo en Base64"
+	echo "- Al parecer es un codigo en Base64"
 	CODE=$(cat "$TEMP_CODE")
         echo "$CODE" | base64 -d | tr -d '\0' > $TEMP_CODE
-	echo
 else
-	echo "Al parecer es el codigo directo..."
+	echo "- Al parecer es el codigo directo..."
 	#CODE=$(cat "$TEMP_CODE")
 fi
 
 echo
-echo "Realizando una limpieza de las concatenaciones"
-echo "Imprimiendo codigo final"
+echo "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
+echo
 cat -e "$TEMP_CODE" | sed -re "s/'\+'//g" -e "s/([;{}])/\1\n/g"
 
 rm "$TEMP_CODE"
