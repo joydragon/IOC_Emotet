@@ -27,7 +27,7 @@ python -c 'import sys,zlib,binascii; input = sys.argv[1]; output = sys.argv[2]; 
 echo
 
 echo "Extrayendo el codigo con olevba y sed..."
-olevba -c "$TEMP_OLE" | grep -e '"' | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | sed -re "s/^.*-e\s*//" | paste -sd "" - | sed -re "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
+olevba -c "$TEMP_OLE" | grep -e '"' | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | paste -sd "" - | sed -re "s/^.*-e\s*//" | sed -re "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
 rm "$TEMP_B64" "$TEMP_OLE"
 TEST=$(cat "$TEMP_CODE" | sed -re "s/[A-Za-z0-9=+\/ ]+//g")
 echo
