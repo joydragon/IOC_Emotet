@@ -8,6 +8,17 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
+if [ -f "$1" ]; then
+	FILETYPE=$(file "$1" | grep "XML 1.0 document")
+	if [ -z "$FILETYPE" ]; then
+		echo >&2 "ERROR: El archivo no tiene formato XML."
+		exit 1
+	fi
+else
+	echo >&2 "ERROR: el archivo no existe"
+	exit 1
+fi
+
 TEMP_B64=$(mktemp)
 TEMP_OLE=$(mktemp)
 TEMP_CODE=$(mktemp)
