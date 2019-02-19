@@ -11,12 +11,64 @@ fi
 
 TEMP_CODE=$(mktemp)
 
+function ole_parse1(){
+	CODE=$(olevba -c "$1" | grep -e "cmd" | tail -n 1 > "$TEMP_CODE")
+	echo >&2 "- Limpiando los \"set\" de CMD"
+	SEP="%%%"
+	GO=1
+	while [ $GO -ne 0 ]; do
+		CODE=$(cat "$TEMP_CODE" | grep "set")
+		SETX=$(echo "$CODE" | sed -re "s/.*set\s*([^=]+)=([^& ]+).*/\1${SEP}\2/");
+		if [ -n "$SETX" ]; then
+			P1=$(echo "$SETX" | sed -re "s/(.*)${SEP}.*/\1/")
+			P2=$(echo "$SETX" | sed -re "s/.*${SEP}(.*)/\1/")
+
+			echo "$CODE" | sed -r -e "s/set\s*${P1}\s*=\s*${P2}\s*&+//" -e "s/%${P1}%/${P2}/" > "$TEMP_CODE"
+		else
+			GO=0
+		fi
+	done
+	echo >&2
+
+	echo >&2 "- Buscando y reemplazando codigo de ofuscacion con replace"
+	echo >&2
+	REPLACE=$(cat "$TEMP_CODE" | sed -re "s/.*replace\('([-0-9]+).*/\1/");
+	sed -ire "s/${REPLACE}//g" "$TEMP_CODE";
+
+	echo >&2 "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
+	echo >&2
+	sed -i -r -e "s/'\+'//g" -e "s/([;{}])/\1\n/g" "$TEMP_CODE"
+}
+
+function ole_parse2(){
+	echo >&2 "- Extrayendo el codigo con olevba, grep y sed."
+	olevba -c "$1" | grep -e '"' | grep -e "=" | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | paste -sd "" - | sed -re "s/^.*-e\s*//" | sed -re "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
+	TEST=$(cat "$TEMP_CODE" | sed -re "s/[A-Za-z0-9=+\/ ]+//g")
+	echo >&2
+
+	if [ -z "$TEST" ]; then
+		echo >&2 "- Al parecer es un codigo en Base64"
+		CODE=$(cat "$TEMP_CODE")
+		echo "$CODE" | base64 -d | tr -d '\0' > $TEMP_CODE
+	else
+		echo >&2 "- Al parecer es el codigo directo..."
+		#CODE=$(cat "$TEMP_CODE")
+	fi
+
+	echo >&2
+	echo >&2 "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
+	echo >&2
+
+	CODE=$(cat "$TEMP_CODE")
+	echo -e "$CODE" | sed -re "s/'\+'//g" -e "s/([;{}])/\1\n/g" > "$TEMP_CODE"
+}
+
 function xml_parse(){
 	TEMP_B64=$(mktemp)
 	TEMP_OLE=$(mktemp)
-	echo "- Extrayendo la información de payload OLE del Word.."
+	echo >&2 "- Extrayendo la información de payload OLE del Word.."
 	xmlstarlet sel -t -m "//w:docSuppData" -v "w:binData" "$1" > $TEMP_B64
-	echo
+	echo >&2
 
 	sed -i -e "s/\s*//g" "$TEMP_B64"
 
@@ -25,77 +77,45 @@ function xml_parse(){
 		exit 1
 	fi
 
-	echo "- Descomprimiendo el payload..."
+	echo >&2 "- Descomprimiendo el payload..."
 	python -c 'import sys,zlib,binascii; input = sys.argv[1]; output = sys.argv[2]; f = open(input,"r"); ole_data=zlib.decompress(binascii.a2b_base64(f.read())[0x32:]); f.close(); f = open(output,"a"); f.write(ole_data); f.close();' "$TEMP_B64" "$TEMP_OLE"
-	echo
+	echo >&2
 
-	echo "- Extrayendo el codigo con olevba y sed..."
-	olevba -c "$TEMP_OLE" | grep -e '"' | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | paste -sd "" - | sed -re "s/^.*-e\s*//" | sed -re "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
-	rm "$TEMP_B64" "$TEMP_OLE"
-	TEST=$(cat "$TEMP_CODE" | sed -re "s/[A-Za-z0-9=+\/ ]+//g")
-	echo
+	RES=$(ole_parse2 "$1")
 
-	if [ -z "$TEST" ]; then
-		echo "- Al parecer es un codigo en Base64"
-		CODE=$(cat "$TEMP_CODE")
-		echo "$CODE" | base64 -d | tr -d '\0' > $TEMP_CODE
-	else
-		echo "- Al parecer es el codigo directo..."
-		#CODE=$(cat "$TEMP_CODE")
-	fi
-
-	echo
-	echo "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
-	echo
-
-	CODE=$(cat "$TEMP_CODE")
-	echo -e "$CODE" | sed -re "s/'\+'//g" -e "s/([;{}])/\1\n/g" > "$TEMP_CODE"
+	echo -e "$RES"
 }
 
 function doc_parse(){
-	echo "- Extrayendo el codigo con olevba y sed..."
-	olevba -c "$1" | grep -e "cmd" | tail -n 1 > "$TEMP_CODE"
-	echo
+	echo >&2 "- Extrayendo el codigo con olevba y grep cmd."
+	echo >&2
+	DOC=$(olevba -c "$1" | grep -e "cmd" | tail -n 1)
 
-	echo "- Limpiando los \"set\" de CMD"
-	SEP="%%%"
-	GO=1
-	while [ $GO -ne 0 ]; do
-	CODE=$(cat "$TEMP_CODE" | grep "set")
-	SETX=$(echo "$CODE" | sed -re "s/.*set\s*([^=]+)=([^& ]+).*/\1${SEP}\2/");
-	if [ -n "$SETX" ]; then
-		P1=$(echo "$SETX" | sed -re "s/(.*)${SEP}.*/\1/")
-		P2=$(echo "$SETX" | sed -re "s/.*${SEP}(.*)/\1/")
-
-		echo "$CODE" | sed -r -e "s/set\s*${P1}\s*=\s*${P2}\s*&+//" -e "s/%${P1}%/${P2}/" > $TEMP_CODE
+	if [ -n "$DOC" ]; then
+		RES=$(ole_parse1 "$1")
 	else
-		GO=0
+		RES=$(ole_parse2 "$1")
 	fi
-	done
-	echo
 
-	echo "- Buscando y reemplazando codigo de ofuscacion con replace"
-	echo
-	REPLACE=$(cat "$TEMP_CODE" | sed -re "s/.*replace\('([-0-9]+).*/\1/");
-	sed -ire "s/${REPLACE}//g" "$TEMP_CODE";
-
-	echo "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
-	echo
-	sed -i -r -e "s/'\+'//g" -e "s/([;{}])/\1\n/g" "$TEMP_CODE"
+	echo -e "$RES"
 }
 
 if [ -f "$1" ]; then
 	FILETYPE=$(file "$1")
 	if [ -n "$(echo "$FILETYPE" | grep -e "XML 1.0 document")" ]; then
+		echo >&2 "Revisando el archivo, parece ser un documento Microsoft Office XML"
+		echo >&2
 		EPOCH=1
 		RES=$(xml_parse "$1")
-		echo -e "$RES"
+
 		cat "$TEMP_CODE"
 		rm "$TEMP_CODE"
 	elif [ -n "$(echo "$FILETYPE" | grep -e "Composite Document File V2 Document")" ]; then
+		echo >&2  "Revisando el archivo, parece ser un documento .doc con macros"
+		echo >&2
 		EPOCH=2
 		RES=$(doc_parse "$1")
-		echo -e "$RES"
+
 		cat "$TEMP_CODE"
 		rm "$TEMP_CODE"
 	else
