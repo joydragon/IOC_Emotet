@@ -100,6 +100,21 @@ function doc_parse(){
 	echo -e "$RES"
 }
 
+function print_result(){
+	echo >&2 "- Imprimiendo el codigo..."
+	echo >&2 "------------------------------------------------------------------------------------------------"
+	cat "$TEMP_CODE" >&2
+	echo >&2 "------------------------------------------------------------------------------------------------"
+
+	echo >&2
+	echo >&2 "- URL de IOC:"
+	echo >&2
+	cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.split.*$/\1/" -e "s/\\\s*$//" -e "s/[,@]/\n/g" >&2
+
+	rm "$TEMP_CODE"
+
+}
+
 if [ -f "$1" ]; then
 	FILETYPE=$(file "$1")
 	if [ -n "$(echo "$FILETYPE" | grep -e "XML 1.0 document")" ]; then
@@ -108,16 +123,15 @@ if [ -f "$1" ]; then
 		EPOCH=1
 		RES=$(xml_parse "$1")
 
-		cat "$TEMP_CODE"
-		rm "$TEMP_CODE"
+		print_result
+
 	elif [ -n "$(echo "$FILETYPE" | grep -e "Composite Document File V2 Document")" ]; then
 		echo >&2  "Revisando el archivo, parece ser un documento .doc con macros"
 		echo >&2
 		EPOCH=2
 		RES=$(doc_parse "$1")
 
-		cat "$TEMP_CODE"
-		rm "$TEMP_CODE"
+		print_result
 	else
 		echo >&2 "ERROR: El archivo no tiene el formato requerido (DOC con macros o Microsoft Office XML)"
 		exit 1
