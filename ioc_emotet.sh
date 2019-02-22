@@ -109,7 +109,7 @@ function print_result(){
 	echo >&2
 	echo >&2 "- URL de IOC:"
 	echo >&2
-	cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.split.*$/\1/" -e "s/\\\s*$//" -e "s/[,@]/\n/g" >&2
+	cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.split.*$/\1/i" -e "s/\\\s*$//" -e "s/[,@]/\n/g" >&2
 
 	rm "$TEMP_CODE"
 
