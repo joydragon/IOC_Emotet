@@ -12,7 +12,7 @@ fi
 TEMP_CODE=$(mktemp)
 
 function ole_parse1(){
-	CODE=$(olevba -c "$1" | grep -e "cmd" | tail -n 1 > "$TEMP_CODE")
+	CODE=$(olevba -c "$1" | grep -e "cmd" | grep -v "binar" | tail -n 1 > "$TEMP_CODE")
 	echo >&2 "- Limpiando los \"set\" de CMD"
 	SEP="%%%"
 	GO=1
@@ -89,7 +89,7 @@ function xml_parse(){
 function doc_parse(){
 	echo >&2 "- Extrayendo el codigo con olevba y grep cmd."
 	echo >&2
-	DOC=$(olevba -c "$1" | grep -e "cmd" | tail -n 1)
+	DOC=$(olevba -c "$1" | grep -e "cmd" | grep -v "binar" | tail -n 1)
 
 	if [ -n "$DOC" ]; then
 		RES=$(ole_parse1 "$1")
@@ -127,6 +127,14 @@ if [ -f "$1" ]; then
 
 	elif [ -n "$(echo "$FILETYPE" | grep -e "Composite Document File V2 Document")" ]; then
 		echo >&2  "Revisando el archivo, parece ser un documento .doc con macros"
+		echo >&2
+		EPOCH=2
+		RES=$(doc_parse "$1")
+
+		print_result
+
+	elif [ -n "$(echo "$FILETYPE" | grep -e "Microsoft Word 2007+")" ]; then
+		echo >&2 "Revisando el archivo, parece ser un documento .docx con macros"
 		echo >&2
 		EPOCH=2
 		RES=$(doc_parse "$1")
