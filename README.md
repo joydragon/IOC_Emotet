@@ -9,7 +9,18 @@ Se necesita tener instalados los siguientes componentes antes:
 - __olevba__ de oletools (está en la mayoría de los repositorios oficiales https://github.com/decalage2/oletools)
 
 # Funcionamiento
-Se ejecuta el script con el archivo .doc como parámetro.
+Se ejecuta el script con el archivo a analizar como parámetro.
+
+```
+$ ./ioc_emotet.sh documento.doc
+```
+
+# Detecciones
+
+Este script puede funcionar detectando estos tipos de archivos:
+- Archivos .doc con objetos OLE embebidos (Composite Document File V2 Document)
+- Archivos .doc con formato Microsoft Office XML (XML 1.0 document)
+- Archivos .docx con objetos OLE embebidos (Microsoft Word 2007+)
 
 # TODO
-Faltan los fallos cuando no se encuentran los formatos correctos de archivos, o errores intermedios.
+Faltan métodos de ofuscación, principalmente el de detección de código embebido en TextBox dentro del documento.
