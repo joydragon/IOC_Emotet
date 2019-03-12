@@ -42,7 +42,7 @@ function ole_parse1(){
 
 function ole_parse2(){
 	echo >&2 "- Extrayendo el codigo con olevba, grep y sed."
-	olevba -c "$1" | grep -e '"' | grep -e "=" | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | paste -sd "" - | sed -re "s/^.*-e\s*//" | sed -re "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
+	olevba -c "$1" | grep -e '"' | grep -e "=" | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | paste -sd "" - | sed -re "s/^.*-e\s*//" -e "s/^([^=]+=+).*/\1/" -e "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
 	TEST=$(cat "$TEMP_CODE" | sed -re "s/[A-Za-z0-9=+\/ ]+//g")
 	echo >&2
 
