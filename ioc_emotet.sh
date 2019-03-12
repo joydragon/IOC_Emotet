@@ -40,6 +40,21 @@ function ole_parse1(){
 	sed -i -r -e "s/'\+'//g" -e "s/([;{}])/\1\n/g" "$TEMP_CODE"
 }
 
+function zlib_parse(){
+	ZLIB_AUX=$(cat "$TEMP_CODE" | paste -sd "" - | grep -ie "fromBase64String")
+	
+	if [ -n "$ZLIB_AUX" ]; then
+		echo >&2
+		echo >&2 "- Descomprimiendo deflate con base64..."
+		echo >&2
+		TEMP_ZLIB=$(mktemp)
+		echo "$ZLIB_AUX" | sed -re "s/^.*fRoMBAse64stRINg\(+['\"]([^']+)['\"]\).*$/\1/i" | base64 -d > "$TEMP_ZLIB"
+
+		printf "\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x00" | cat - "$TEMP_ZLIB" | pigz -d 2>/dev/null > "$TEMP_CODE"
+		rm "$TEMP_ZLIB"
+	fi
+}
+
 function ole_parse2(){
 	echo >&2 "- Extrayendo el codigo con olevba, grep y sed."
 	olevba -c "$1" | grep -e '"' | grep -e "=" | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" | paste -sd "" - | sed -re "s/^.*-e\s*//" -e "s/^([^=]+=+).*/\1/" -e "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
@@ -61,6 +76,13 @@ function ole_parse2(){
 
 	CODE=$(cat "$TEMP_CODE")
 	echo -e "$CODE" | sed -re "s/'\+'//g" -e "s/([;{}])/\1\n/g" > "$TEMP_CODE"
+	
+	B64_CHK=$(grep "$TEMP_CODE" -ie "sYSTEm.Io.COmPReSsiON.DEFlaTestREaM")
+	if [ -n "$B64_CHK" ]; then
+		echo >&2 "- El codigo esta comprimido dentro del powershell, descomprimiendo..."
+		zlib_parse
+	fi
+
 }
 
 function xml_parse(){
