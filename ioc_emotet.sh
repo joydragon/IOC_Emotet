@@ -3,6 +3,7 @@
 hash olevba 2>/dev/null || { echo >&2 "Error: Se necesita instalar el programa 'olevba', favor instalarlo antes de ejecutar el script."; exit 1; }
 hash xmlstarlet 2>/dev/null || { echo >&2 "Error: Se necesita instalar el programa 'xmlstarlet', favor instalarlo antes de ejecutar el script."; exit 1; }
 hash file 2>/dev/null || { echo >&2 "Error: Se necesita instalar el programa 'file', favor instalarlo antes de ejecutar el script."; exit 1; }
+hash gzip 2>/dev/null || { echo >&2 "Error: Se necesita instalar el programa 'gzip', favor instalarlo antes de ejecutar el script."; exit 1; }
 
 if [ $# -ne 1 ]; then
 	echo >&2 "ERROR: Necesita pasarle un archivo como parametro"
@@ -35,9 +36,9 @@ function ole_parse1(){
 	REPLACE=$(cat "$TEMP_CODE" | sed -re "s/.*replace\('([-0-9]+).*/\1/");
 	sed -ire "s/${REPLACE}//g" "$TEMP_CODE";
 
-	echo >&2 "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
-	echo >&2
-	sed -i -r -e "s/'\+'//g" -e "s/([;{}])/\1\n/g" "$TEMP_CODE"
+#	echo >&2 "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
+#	echo >&2
+#	sed -i -r -e "s/'\+'//g" -e "s/([;{}])/\1\n/g" "$TEMP_CODE"
 }
 
 function zlib_parse(){
@@ -50,7 +51,7 @@ function zlib_parse(){
 		TEMP_ZLIB=$(mktemp)
 		echo "$ZLIB_AUX" | sed -re "s/^.*fRoMBAse64stRINg\(+\s*\(*\s*['\"]([^']+)['\"]\).*$/\1/i" | base64 -d > "$TEMP_ZLIB"
 
-		printf "\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x00" | cat - "$TEMP_ZLIB" | pigz -d 2>/dev/null > "$TEMP_CODE"
+		printf "\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x00" | cat - "$TEMP_ZLIB" | gzip -d 2>/dev/null > "$TEMP_CODE"
 		rm "$TEMP_ZLIB"
 	fi
 }
@@ -76,13 +77,12 @@ function ole_parse2(){
 
 	CODE=$(cat "$TEMP_CODE")
 	echo -e "$CODE" | sed -re "s/'\+'//g" -e "s/([;{}])/\1\n/g" > "$TEMP_CODE"
-	
+
 	B64_CHK=$(grep "$TEMP_CODE" -ie "Io.COmPReSsiON.DEFlaTestREaM")
 	if [ -n "$B64_CHK" ]; then
 		echo >&2 "- El codigo esta comprimido dentro del powershell, descomprimiendo..."
 		zlib_parse
 	fi
-
 }
 
 function xml_parse(){
