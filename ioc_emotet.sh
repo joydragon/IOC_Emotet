@@ -56,6 +56,26 @@ function zlib_parse(){
 	fi
 }
 
+function format_parse(){
+	HTTP_STRING=$(cat "$TEMP_CODE" | sed -r -e "s/;/;\n/g" | grep -ie "invoke" -e "split" | head -n 1)
+
+	ORDER=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*(.*)+\).*$/\1/" -e "s/\{//g" )
+	FORMAT=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*([^\)]+)+\).*$/\2/" -e "s/'//g")
+	SPLIT=$(echo "$HTTP_STRING" | sed -re "s/^.*invoke\(['\"](.)['\"].*$/\1/i")
+	
+	IFS='}' read -r -a OR_FORMAT <<< "$ORDER"
+	IFS=',' read -r -a AR_FORMAT <<< "$FORMAT"
+	
+	i=0
+	RES=""
+	while [ -n "${AR_FORMAT[$i]}" ]; do
+	        RES="$RES${AR_FORMAT[${OR_FORMAT[$i]}]}"
+	        i=$((i+1))
+	done
+	
+	echo "$RES" | sed -re "s/${SPLIT}/\n/g" 2>&1
+}
+
 function ole_parse3(){
 	echo >&2
 	echo >&2 "- Usando metodo Ave Maria, para extraer informacion en Base64"
@@ -97,7 +117,7 @@ function ole_parse2(){
 	echo >&2
 
 	CODE=$(cat "$TEMP_CODE")
-	echo -e "$CODE" | sed -re "s/'\+'//g" -e "s/([;{}])/\1\n/g" > "$TEMP_CODE"
+	echo -e "$CODE" | sed -re "s/'\+'//g" > "$TEMP_CODE"
 
 	B64_CHK=$(grep "$TEMP_CODE" -ie "Io.COmPReSsiON.DEFlaTestREaM")
 	if [ -n "$B64_CHK" ]; then
@@ -153,7 +173,13 @@ function print_result(){
 	echo >&2
 	echo >&2 "- URL de IOC:"
 	echo >&2
-	cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"']?split.*$/\1/i" -e "s/\\\s*$//" -e "s/[,@]/\n/g" >&2
+
+	FORMAT_CHK=$(grep "$TEMP_CODE" -ie "{[0-9]\+}\s*{[0-9]\+}\s*{[0-9]\+}\s*")
+	if [ -n "$FORMAT_CHK" ]; then
+		format_parse
+	else	
+		cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"']?split.*$/\1/i" -e "s/\\\s*$//" -e "s/[,@]/\n/g" >&2
+	fi
 
 	rm "$TEMP_CODE"
 
