@@ -57,12 +57,12 @@ function zlib_parse(){
 }
 
 function format_parse(){
-	HTTP_STRING=$(cat "$TEMP_CODE" | sed -r -e "s/;/;\n/g" | grep -ie "invoke" -e "split" | head -n 1)
+	HTTP_STRING=$(cat "$TEMP_CODE" | sed -r -e "s/\$/\\\$/g" -e "s/;/;\n/g" | grep -ie "invoke" -e "split" | head -n 1)
 
 	ORDER=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*(.*)+\).*$/\1/" -e "s/\{//g" )
 	FORMAT=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*([^\)]+)+\).*$/\2/" -e "s/'//g")
-	SPLIT=$(echo "$HTTP_STRING" | sed -re "s/^.*invoke\(['\"](.)['\"].*$/\1/i")
-	
+	SPLIT=$(echo "$HTTP_STRING" | sed -re "s/^.*invoke\(['\"](.)['\"].*$/\1/i" -e "s/^.*split['\"]*\(['\"](.)['\"].*$/\1/i")
+
 	IFS='}' read -r -a OR_FORMAT <<< "$ORDER"
 	IFS=',' read -r -a AR_FORMAT <<< "$FORMAT"
 	
@@ -117,7 +117,7 @@ function ole_parse2(){
 	echo >&2
 
 	CODE=$(cat "$TEMP_CODE")
-	echo -e "$CODE" | sed -re "s/'\+'//g" > "$TEMP_CODE"
+	echo -e "$CODE" | sed -re "s/'\+'//g" -e "s/\`//g" > "$TEMP_CODE"
 
 	B64_CHK=$(grep "$TEMP_CODE" -ie "Io.COmPReSsiON.DEFlaTestREaM")
 	if [ -n "$B64_CHK" ]; then
