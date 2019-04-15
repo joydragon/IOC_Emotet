@@ -57,23 +57,53 @@ function zlib_parse(){
 }
 
 function format_parse(){
-	HTTP_STRING=$(cat "$TEMP_CODE" | sed -r -e "s/\$/\\\$/g" -e "s/;/;\n/g" | grep -ie "invoke" -e "split" | head -n 1)
+#	HTTP_STRING=$(cat "$TEMP_CODE" | sed -r -e "s/\$/\\\$/g" -e "s/;/;\n/g" | grep -ie "invoke" -e "split" | head -n 1)
+#
+#	ORDER=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*(.*)+\).*$/\1/" -e "s/\{//g" )
+#	FORMAT=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*([^\)]+)+\).*$/\2/" -e "s/'//g")
+#	SPLIT=$(echo "$HTTP_STRING" | sed -re "s/^.*invoke\(['\"](.)['\"].*$/\1/i" -e "s/^.*split['\"]*\(['\"](.)['\"].*$/\1/i")
+#
+#	IFS='}' read -r -a OR_FORMAT <<< "$ORDER"
+#	IFS=',' read -r -a AR_FORMAT <<< "$FORMAT"
 
-	ORDER=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*(.*)+\).*$/\1/" -e "s/\{//g" )
-	FORMAT=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*([^\)]+)+\).*$/\2/" -e "s/'//g")
-	SPLIT=$(echo "$HTTP_STRING" | sed -re "s/^.*invoke\(['\"](.)['\"].*$/\1/i" -e "s/^.*split['\"]*\(['\"](.)['\"].*$/\1/i")
+#	i=0
+#	RES=""
+#	while [ -n "${AR_FORMAT[$i]}" ]; do
+#	        RES="$RES${AR_FORMAT[${OR_FORMAT[$i]}]}"
+#	        i=$((i+1))
+#	done
+#	
+#	echo "$RES" | sed -re "s/${SPLIT}/\n/g" 2>&1
+
+REGEX="\(\"(\{[0-9]+\})+\" *-f[^\(\)]+\)"
+FULL_STRING=$(cat "$TEMP_CODE")
+
+while [[ $FULL_STRING =~ $REGEX ]]; do
+	
+	STRING="${BASH_REMATCH[0]}"
+	ORDER=$(echo "$STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*(.*)+\).*$/\1/" -e "s/\{//g" )
+        FORMAT=$(echo "$STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*([^\)]+)+\).*$/\2/" -e "s/'//g")
 
 	IFS='}' read -r -a OR_FORMAT <<< "$ORDER"
-	IFS=',' read -r -a AR_FORMAT <<< "$FORMAT"
-	
-	i=0
-	RES=""
-	while [ -n "${AR_FORMAT[$i]}" ]; do
-	        RES="$RES${AR_FORMAT[${OR_FORMAT[$i]}]}"
-	        i=$((i+1))
-	done
-	
-	echo "$RES" | sed -re "s/${SPLIT}/\n/g" 2>&1
+        IFS=',' read -r -a AR_FORMAT <<< "$FORMAT"
+
+        i=0
+        RES=""
+        while [ -n "${AR_FORMAT[$i]}" ]; do
+                RES="$RES${AR_FORMAT[${OR_FORMAT[$i]}]}"
+                i=$((i+1))
+        done
+
+	RES=$(echo $RES | sed -re "s/\//\\\\\//g" -e "s/\{/\\\\\{/g" -e "s/\}/\\\\\}/" -e "s/\(/\\\\\(/" -e "s/\)/\\\\\)/")
+	STRING=$(echo $STRING | sed -re "s/\//\\\\\//g" -e "s/\{/\\\\\{/g" -e "s/\}/\\\\\}/" -e "s/\(/\\\\\(/" -e "s/\)/\\\\\)/")
+	FULL_STRING=$(echo $FULL_STRING | sed -re "s/$STRING/'$RES'/")
+done
+
+echo $FULL_STRING | sed -re "s/\`//g" -e "s/'\+'//g" > "$TEMP_CODE"
+
+SPLIT=$(echo "$FULL_STRING" | sed -re "s/^.*invoke\(['\"](.)['\"].*$/\1/i" -e "s/^.*split['\"]*\(['\"](.)['\"].*$/\1/i")
+cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"']?split.*$/\1/i" -e "s/\\\s*$//" -e "s/${SPLIT}/\n/g" >&2
+
 }
 
 function ole_parse3(){
@@ -176,6 +206,8 @@ function print_result(){
 
 	FORMAT_CHK=$(grep "$TEMP_CODE" -ie "{[0-9]\+}\s*{[0-9]\+}\s*{[0-9]\+}\s*")
 	if [ -n "$FORMAT_CHK" ]; then
+		echo >&2 "- Se necesita el filtro extra anti ofuscacion..."
+		echo >&2
 		format_parse
 	else	
 		cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"']?split.*$/\1/i" -e "s/\\\s*$//" -e "s/[,@]/\n/g" >&2
