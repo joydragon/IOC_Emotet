@@ -107,15 +107,15 @@ cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"'
 }
 
 function string_parse(){
-	echo >&2
 	echo >&2 "- Usando metodo San Expedito, para extraer informacion en Base64"
+	echo >&2
 	strings -n 100 "$1" | grep -v -e "[<>\/]" | base64 -d | tr -d '\0' > $TEMP_CODE
 }
 
 
 function ole_parse3(){
-	echo >&2
 	echo >&2 "- Usando metodo Ave Maria, para extraer informacion en Base64"
+	echo >&2
 	DATA=$(olevba -c "$1" | grep -ve "VBA FORM" -e "in file" -e "olevba" -e "$1" | grep -e "[A-Za-z0-9+\/]\{20,\}=*" | sed -re "s/^[^A-Za-z0-9]*([A-Za-z0-9+\/]+=*).*$/\1/")
 	if [ -z "$DATA" ]; then
 		echo >&2 "- Datos no encontrados..."
@@ -125,22 +125,22 @@ function ole_parse3(){
 }
 
 function ole_parse2(){
-	echo >&2 "- Extrayendo el codigo con olevba, grep y sed."
-	olevba -c "$1" | grep -e '"' | grep -e "=" | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" -e "s/GetObject.*$//i" | paste -sd "" - | sed -re "s/^.*-e\s*//" -e "s/^([^=]+=+).*/\1/" -e "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
-	
+	string_parse "$1"
 	if [ -z "$(cat $TEMP_CODE)" ]; then
 		ole_parse3 "$1"
 	fi
 	if [ -z "$(cat $TEMP_CODE)" ]; then
-		string_parse "$1"
+		echo >&2 "- Extrayendo el codigo con olevba, grep y sed."
+		echo >&2
+		olevba -c "$1" | grep -e '"' | grep -e "=" | sed -re "s/\s*\+\s*//g" -e "s/^[^=]+\s*=\s*//" -e "s/\"//g" -e "s/GetObject.*$//i" | paste -sd "" - | sed -re "s/^.*-e\s*//" -e "s/^([^=]+=+).*/\1/" -e "s/\s*$//" -e "s/^\s*//" > $TEMP_CODE
 	fi
 	if [ -z "$(cat $TEMP_CODE)" ]; then
 		echo >&2 "- No se pudo sacar informacion."
+		echo >&2
 		exit 1
 	fi
 
 	TEST=$(cat "$TEMP_CODE" | sed -re "s/[A-Za-z0-9=+\/ ]+//g")
-	echo >&2
 
 	if [ -z "$TEST" ]; then
 		echo >&2 "- Al parecer es un codigo en Base64"
