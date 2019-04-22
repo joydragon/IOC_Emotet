@@ -109,7 +109,7 @@ cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"'
 function string_parse(){
 	echo >&2 "- Usando metodo San Expedito, para extraer informacion en Base64"
 	echo >&2
-	strings -n 100 "$1" | grep -v -e "[<>\/]" | base64 -d | tr -d '\0' > $TEMP_CODE
+	strings -n 100 "$1" | grep -v -e "[<>\/]" > $TEMP_CODE
 }
 
 
