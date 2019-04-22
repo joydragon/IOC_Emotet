@@ -35,10 +35,6 @@ function ole_parse1(){
 	echo >&2
 	REPLACE=$(cat "$TEMP_CODE" | sed -re "s/.*replace\('([-0-9]+).*/\1/");
 	sed -ire "s/${REPLACE}//g" "$TEMP_CODE";
-
-#	echo >&2 "- Realizando una limpieza de las concatenaciones e imprimiendo codigo final"
-#	echo >&2
-#	sed -i -r -e "s/'\+'//g" -e "s/([;{}])/\1\n/g" "$TEMP_CODE"
 }
 
 function zlib_parse(){
@@ -57,24 +53,6 @@ function zlib_parse(){
 }
 
 function format_parse(){
-#	HTTP_STRING=$(cat "$TEMP_CODE" | sed -r -e "s/\$/\\\$/g" -e "s/;/;\n/g" | grep -ie "invoke" -e "split" | head -n 1)
-#
-#	ORDER=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*(.*)+\).*$/\1/" -e "s/\{//g" )
-#	FORMAT=$(echo "$HTTP_STRING" | sed -re "s/^[^{]+([^'\"]+)['\"]\s*-f\s*([^\)]+)+\).*$/\2/" -e "s/'//g")
-#	SPLIT=$(echo "$HTTP_STRING" | sed -re "s/^.*invoke\(['\"](.)['\"].*$/\1/i" -e "s/^.*split['\"]*\(['\"](.)['\"].*$/\1/i")
-#
-#	IFS='}' read -r -a OR_FORMAT <<< "$ORDER"
-#	IFS=',' read -r -a AR_FORMAT <<< "$FORMAT"
-
-#	i=0
-#	RES=""
-#	while [ -n "${AR_FORMAT[$i]}" ]; do
-#	        RES="$RES${AR_FORMAT[${OR_FORMAT[$i]}]}"
-#	        i=$((i+1))
-#	done
-#	
-#	echo "$RES" | sed -re "s/${SPLIT}/\n/g" 2>&1
-
 REGEX="\(\"(\{[0-9]+\})+\" *-f[^\(\)]+\)"
 FULL_STRING=$(cat "$TEMP_CODE")
 
@@ -148,7 +126,6 @@ function ole_parse2(){
 		echo "$CODE" | base64 -d | tr -d '\0' > $TEMP_CODE
 	else
 		echo >&2 "- Al parecer es el codigo directo..."
-		#CODE=$(cat "$TEMP_CODE")
 	fi
 
 	echo >&2
