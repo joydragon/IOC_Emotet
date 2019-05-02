@@ -104,7 +104,7 @@ function ole_parse3(){
 
 function ole_parse2(){
 	string_parse "$1"
-	if [ -z "$(cat $TEMP_CODE)" ]; then
+	if [[ -z "$(cat $TEMP_CODE)" ]] || [[ "$(wc -l $TEMP_CODE)" != "1" ]]; then
 		ole_parse3 "$1"
 	fi
 	if [ -z "$(cat $TEMP_CODE)" ]; then
