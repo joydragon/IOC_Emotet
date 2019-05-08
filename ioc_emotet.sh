@@ -94,7 +94,7 @@ function string_parse(){
 function ole_parse3(){
 	echo >&2 "- Usando metodo Ave Maria, para extraer informacion en Base64"
 	echo >&2
-	DATA=$(olevba -c "$1" | grep -ve "VBA FORM" -e "in file" -e "olevba" -e "$1" | grep -e "[A-Za-z0-9+\/]\{20,\}=*" | sed -re "s/^[^A-Za-z0-9]*([A-Za-z0-9+\/]+=*).*$/\1/")
+	DATA=$(olevba -c "$1" | grep -ve "VBA FORM" -e "in file" -e "olevba" -e "$1" | grep -e "[A-Za-z0-9+\/]\{20,\}=*" | sed -re "s/^[^A-Za-z0-9]*([A-Za-z0-9+\/]+=*).*$/\1/" | strings -n 100)
 	if [ -z "$DATA" ]; then
 		echo >&2 "- Datos no encontrados..."
 	else
