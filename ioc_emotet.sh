@@ -87,7 +87,7 @@ cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"'
 function string_parse(){
 	echo >&2 "- Usando metodo San Expedito, para extraer informacion en Base64"
 	echo >&2
-	strings -n 100 "$1" | grep -v -e "[<>\/]" > $TEMP_CODE
+	strings -n 100 "$1" | grep -v -e "[<>\/ ]" > $TEMP_CODE
 }
 
 
@@ -97,6 +97,7 @@ function ole_parse3(){
 	DATA=$(olevba -c "$1" | grep -ve "VBA FORM" -e "in file" -e "olevba" -e "$1" | grep -e "[A-Za-z0-9+\/]\{20,\}=*" | sed -re "s/^[^A-Za-z0-9]*([A-Za-z0-9+\/]+=*).*$/\1/" | strings -n 100)
 	if [ -z "$DATA" ]; then
 		echo >&2 "- Datos no encontrados..."
+		echo >&2
 	else
 		echo "$DATA" > "$TEMP_CODE"
 	fi
