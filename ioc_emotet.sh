@@ -92,6 +92,26 @@ function string_parse(){
 	echo -e "$DATA" > $TEMP_CODE
 }
 
+function string_parse2(){
+	echo >&2 "- Usando metodo Ester Psicore, para extraer informacion en Base64"
+	echo >&2
+	# Si hay mas de 1 linea, filtrar las que se repite un mismo caracter por mas de 5 veces seguidas
+	DATA=$(strings -n 100 "$1" | grep -v -e "[<>\/ ]" | sed -re "s/(.)\1{4}//g" | grep -ve " xml" | strings -n 100)
+	# Buscar los replace que tienen puesto solamente para hacer ofuscacion del codigo
+	REPLACE=$(olevba -c "$1" | grep -i Replace | sed -re "s/^.*(Replace.*$)/\1/i")
+	re1='"([^"]+)"\s*,\s*"([^"]*)"\s*,\s*"(["]*)"'
+	if [[ "$REPLACE" =~ $re1 ]]; then
+		block1=$(echo ${BASH_REMATCH[1]})
+		block2=$(echo ${BASH_REMATCH[2]//$/\\$})
+		block3=$(echo ${BASH_REMATCH[3]//$/\\$})
+
+		block1=$(echo "$block1" | sed -re "s/$block2/$block3/g")
+		DATA=$(echo "$DATA" | sed -re "s/$block1//g")
+	fi
+
+	echo -e "$DATA" > $TEMP_CODE
+}
+
 
 function ole_parse3(){
 	echo >&2 "- Usando metodo Ave Maria, para extraer informacion en Base64"
@@ -106,8 +126,11 @@ function ole_parse3(){
 }
 
 function ole_parse2(){
-	string_parse "$1"
-	if [[ -z "$(cat $TEMP_CODE)" ]] || [[ "$(wc -l $TEMP_CODE)" != "1" ]]; then
+	string_parse2 "$1"
+#	if [[ -z "$(cat $TEMP_CODE)" ]] || [[ "$(wc -l $TEMP_CODE)" =~ "^[2-9].*" ]]; then
+#		string_parse1 "$1"
+#	fi
+	if [[ -z "$(cat $TEMP_CODE)" ]] || [[ "$(wc -l $TEMP_CODE)" =~ "^[2-9].*" ]]; then
 		ole_parse3 "$1"
 	fi
 	if [ -z "$(cat $TEMP_CODE)" ]; then
