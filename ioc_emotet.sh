@@ -87,7 +87,9 @@ cat "$TEMP_CODE" |  grep -i "split" | sed -re "s/^.*\(?[\"'](.*)[\"']\)?.\(?[\"'
 function string_parse(){
 	echo >&2 "- Usando metodo San Expedito, para extraer informacion en Base64"
 	echo >&2
-	strings -n 100 "$1" | grep -v -e "[<>\/ ]" > $TEMP_CODE
+	# Si hay mas de 1 linea, filtrar las que se repite un mismo caracter por mas de 5 veces seguidas
+	DATA=$(strings -n 100 "$1" | grep -v -e "[<>\/ ]" | sed -re "s/(.)\1{4}//g" | grep -ve " xml" | strings -n 100)
+	echo -e "$DATA" > $TEMP_CODE
 }
 
 
