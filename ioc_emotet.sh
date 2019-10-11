@@ -107,6 +107,16 @@ function string_parse2(){
 
 		block1=$(echo "$block1" | sed -re "s/$block2/$block3/g")
 		DATA=$(echo "$DATA" | sed -re "s/$block1//g")
+	else
+		re2='\(([^,]+),([^,]+),\s*"(["]*)"\s*\)'
+		if [[ "$REPLACE" =~ $re2 ]]; then
+			block1=$(echo ${BASH_REMATCH[1]})
+			block2=$(echo ${BASH_REMATCH[2]//$/\\$})
+			block3=$(echo ${BASH_REMATCH[3]//$/\\$})
+
+			VAR_ASSIGN=$(olevba -c "$1" | grep -e "$block2" | grep -vie "replace" | sed -re 's/^.*"(.*)".*$/\1/')
+			DATA=$(echo "$DATA" | sed -re "s/$VAR_ASSIGN//g" | grep -vie "winmgmts:")
+		fi
 	fi
 
 	echo -e "$DATA" > $TEMP_CODE
