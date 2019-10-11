@@ -159,7 +159,7 @@ function ole_parse2(){
 	if [ -z "$TEST" ]; then
 		echo >&2 "- Al parecer es un codigo en Base64"
 		CODE=$(cat "$TEMP_CODE")
-		echo "$CODE" | base64 -d | tr -d '\0' > $TEMP_CODE
+		echo "$CODE" | base64 -d 2>/dev/null | tr -d '\0' > $TEMP_CODE
 	else
 		echo >&2 "- Al parecer es el codigo directo..."
 	fi
